@@ -14,7 +14,7 @@ READ_FROM_URL = True
 MIN_CASES = 100
 
 # Plot for MAX_DAYS days after the day on which each country reaches MIN_CASES.
-MAX_DAYS = 40
+MAX_DAYS = 220
 
 #PLOT_TYPE = 'deaths'
 PLOT_TYPE = 'confirmed cases'
@@ -174,10 +174,15 @@ country = 'Austria'
 #country = 'Iran'
 #country = 'United Kingdom'
 #country = 'China'
+#country = 'Israel'
+#country = 'Italy'
+
 make_bar_plot(country)
 plt.show()
 
+#countries = ['Italy', 'Spain', 'United Kingdom', 'United States',
+#             'Japan', 'France', 'South Korea', 'China', 'Austria', 'Germany']
 countries = ['Italy', 'Spain', 'United Kingdom', 'United States',
-             'Japan', 'France', 'South Korea', 'China', 'Austria', 'Iran']
+'Japan', 'Israel', 'South Korea', 'China', 'Austria', 'Iran']
 make_comparison_plot(countries, normalize=False)
 plt.show()
