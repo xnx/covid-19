@@ -14,10 +14,12 @@ READ_FROM_URL = True
 MIN_CASES = 100
 
 # Plot for MAX_DAYS days after the day on which each country reaches MIN_CASES.
-MAX_DAYS = 220
+MAX_DAYS = 320
 
 #PLOT_TYPE = 'deaths'
 PLOT_TYPE = 'confirmed cases'
+
+PLOT_DAY_MIN = 120
 
 # These are the GitHub URLs for the Johns Hopkins data in CSV format.
 if PLOT_TYPE == 'confirmed cases':
@@ -48,7 +50,7 @@ grouped = df.groupby('Country')
 df2 = grouped.sum()
 df2.rename(index=country_aliases, inplace=True)
 
-def make_bar_plot(country):
+def make_bar_plot(country, normalize=False):
     """Make the bar plot of case numbers and change in numbers line plot."""
 
     # Extract the Series corresponding to the case numbers for country.
@@ -62,6 +64,9 @@ def make_bar_plot(country):
         print('Too few data to plot: minimum number of {}s is {}'
                 .format(PLOT_TYPE, MIN_CASES))
         sys.exit(1)
+
+    if normalize:
+        c_df = c_df.div(populations.loc[country], axis='index') * 100000
 
     fig = plt.Figure()
 
@@ -79,8 +84,15 @@ def make_bar_plot(country):
     ax2.set_xticks([])
 
     ax1.set_xlabel('Days since {} {}'.format(MIN_CASES, PLOT_TYPE))
-    ax1.set_ylabel(f'Number of {PLOT_TYPE}, $N$')
-    ax2.set_ylabel('$\Delta N$')
+    if not normalize:
+        ax1.set_ylabel(f'Number of {PLOT_TYPE}, $N$')
+        ax2.set_ylabel('$\Delta N$')
+    else:
+        ax1.set_ylabel(f'Number of {PLOT_TYPE}, $N$\nper 100,000 population')
+        ax2.set_ylabel('$\Delta N$ per 100,000\npopulation')
+    PLOT_DAY_MAX = len(c_df_change)
+    ax1.set_xlim(PLOT_DAY_MIN, PLOT_DAY_MAX)
+    ax2.set_xlim(PLOT_DAY_MIN, PLOT_DAY_MAX)
 
     # Add a title reporting the latest number of cases available.
     title = '{}\n{} {} on {}'.format(country, c_df[-1], PLOT_TYPE,
@@ -98,8 +110,8 @@ def make_comparison_plot(countries, normalize=False):
     c_df = c_df[c_df >= MIN_CASES]
 
     if normalize:
-        # Calculate confirmed case numbers per 1,000,000 population.
-        c_df  = c_df.div(populations.loc[countries], axis='index') * 1000000
+        # Calculate confirmed case numbers per 100,000 population.
+        c_df  = c_df.div(populations.loc[countries], axis='index') * 100000
 
     # Rearrange DataFrame to give countries in columns and number of days since
     # MIN_CASES in rows.
@@ -112,7 +124,10 @@ def make_comparison_plot(countries, normalize=False):
     fig = plt.figure()
     ax = fig.add_subplot()
     for country, ser in c_df.iteritems():
-        ax.plot(range(len(ser)), np.log10(ser.values), label=country)
+        if normalize:
+            ax.plot(range(len(ser)), ser.values, label=country)
+        else:
+            ax.plot(range(len(ser)), np.log10(ser.values), label=country)
 
     if not normalize:
         # Set the tick marks and labels for the absolute data.
@@ -125,9 +140,9 @@ def make_comparison_plot(countries, normalize=False):
         ax.set_ylim(ymin, ymax)
         ax.set_ylabel(f'Number of {PLOT_TYPE}')
     else:
-        # Set the tick marks and labels for the per 1,000,000 population data.
-        ax.set_ylim(np.log10(np.nanmin(c_df)), np.log10(np.nanmax(c_df)))
-        ax.set_ylabel(f'Number of {PLOT_TYPE} per 1,000,000 population')
+        # Set the tick marks and labels for the per 100,000 population data.
+        ax.set_ylim(np.nanmin(c_df), np.nanmax(c_df))
+        ax.set_ylabel(f'Number of {PLOT_TYPE} per 100,000 population')
 
     # Label the x-axis
     ax.set_xlim(0, MAX_DAYS)
@@ -177,12 +192,13 @@ country = 'Austria'
 #country = 'Israel'
 #country = 'Italy'
 
-make_bar_plot(country)
+normalize = False
+make_bar_plot(country, normalize=normalize)
 plt.show()
 
 #countries = ['Italy', 'Spain', 'United Kingdom', 'United States',
 #             'Japan', 'France', 'South Korea', 'China', 'Austria', 'Germany']
 countries = ['Italy', 'Spain', 'United Kingdom', 'United States',
 'Japan', 'Israel', 'South Korea', 'China', 'Austria', 'Iran']
-make_comparison_plot(countries, normalize=False)
+make_comparison_plot(countries, normalize=normalize)
 plt.show()
